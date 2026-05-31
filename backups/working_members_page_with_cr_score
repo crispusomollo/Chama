@@ -1,0 +1,318 @@
+@extends('layouts.erp')
+
+@section('title', 'Members')
+
+@section('content')
+
+<div x-data="{
+    openModal: false,
+    openEditModal: false,
+    openViewModal: false,
+    viewBorrower: {},
+    editBorrower: {}
+}" class="space-y-6">
+
+    {{-- HEADER BAR --}}
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-700">
+            Member Registry
+        </h2>
+
+        <button
+            @click="openModal = true"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700">
+            + New Member
+        </button>
+    </div>
+
+    {{-- KPI ROW --}}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+        <div class="bg-white p-5 rounded-xl shadow">
+
+            <p class="text-gray-500 text-sm">
+                Total Members
+            </p>
+
+            <p class="text-3xl font-bold text-gray-800">
+                {{ $totalMembers }}
+            </p>
+
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow">
+
+            <p class="text-gray-500 text-sm">
+                Active Borrowers
+            </p>
+
+            <p class="text-3xl font-bold text-blue-600">
+                {{ $activeBorrowers }}
+            </p>
+
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow">
+
+            <p class="text-gray-500 text-sm">
+                Total Contributions
+            </p>
+
+            <p class="text-3xl font-bold text-green-600">
+                KES {{ number_format($totalContributions) }}
+            </p>
+
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow">
+
+            <p class="text-gray-500 text-sm">
+                Loan Portfolio
+            </p>
+
+            <p class="text-3xl font-bold text-red-600">
+                KES {{ number_format($totalLoanPortfolio) }}
+            </p>
+
+        </div>
+
+    </div>
+
+    {{-- TABLE CARD --}}
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+
+        {{-- TABLE HEADER --}}
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="font-semibold text-gray-700">Members List</h3>
+
+            <form method="GET" class="flex gap-2">
+                <input name="search"
+                       value="{{ request('search') }}"
+                       class="border rounded-lg px-3 py-1 text-sm"
+                       placeholder="Search...">
+
+                <button class="bg-gray-800 text-white px-3 py-1 rounded-lg text-sm">
+                    Search
+                </button>
+            </form>
+        </div>
+
+        {{-- TABLE --}}
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-gray-600">
+
+                <tr>
+
+                    <th class="px-4 py-3 text-left">
+                        Member
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Contact
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Contributions
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Active Loans
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Credit Score
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Risk Grade
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Status
+                    </th>
+
+                    <th class="px-4 py-3 text-right">
+                        Actions
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+            @forelse($borrowers as $b)
+                <tr class="border-b hover:bg-gray-50">
+
+    {{-- MEMBER --}}
+    <td class="px-4 py-3">
+
+        <div class="font-semibold text-gray-800">
+            {{ $b->full_name }}
+        </div>
+
+        <div class="text-xs text-gray-500">
+            Joined {{ $b->created_at->format('d M Y') }}
+        </div>
+
+    </td>
+
+    {{-- CONTACT --}}
+    <td class="px-4 py-3">
+
+        <div>
+            {{ $b->contact_no }}
+        </div>
+
+        <div class="text-xs text-gray-500">
+            {{ $b->email }}
+        </div>
+
+    </td>
+
+    {{-- CONTRIBUTIONS --}}
+    <td class="px-4 py-3 font-semibold text-green-600">
+
+        KES {{ number_format($b->contributions->sum('amount')) }}
+
+    </td>
+
+    {{-- ACTIVE LOANS --}}
+    <td class="px-4 py-3">
+
+        {{ $b->loans()
+            ->whereIn('loan_status', ['active','ongoing','overdue'])
+            ->count()
+        }}
+
+    </td>
+
+    {{-- CREDIT SCORE --}}
+    <td class="px-4 py-3">
+
+        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+
+            {{ $b->calculateCreditScore() }}/100
+
+        </span>
+
+    </td>
+
+    {{-- RISK --}}
+    <td class="px-4 py-3">
+
+        @if($b->riskGrade() == 'LOW RISK')
+
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
+                LOW RISK
+            </span>
+
+        @elseif($b->riskGrade() == 'MEDIUM RISK')
+
+            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">
+                MEDIUM RISK
+            </span>
+
+        @else
+
+            <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">
+                HIGH RISK
+            </span>
+
+        @endif
+
+    </td>
+
+    {{-- STATUS --}}
+    <td class="px-4 py-3">
+
+        @if($b->memberStatus() == 'ACTIVE')
+
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
+                ACTIVE
+            </span>
+
+        @elseif($b->memberStatus() == 'BORROWING')
+
+            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+                BORROWING
+            </span>
+
+        @elseif($b->memberStatus() == 'DELINQUENT')
+
+            <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">
+                DELINQUENT
+            </span>
+
+        @else
+
+            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">
+                INACTIVE
+            </span>
+
+        @endif
+
+    </td>
+
+    {{-- ACTIONS --}}
+    <td class="px-4 py-3 text-right">
+
+        <div class="flex justify-end gap-2">
+
+            <a
+                href="{{ route('borrowers.show', $b->id) }}"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+            >
+                View
+            </a>
+
+            <button
+                @click="openEditModal = true; editBorrower = {{ $b->toJson() }}"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs"
+            >
+                Edit
+            </button>
+
+            <form
+                action="{{ route('borrowers.destroy', $b->id) }}"
+                method="POST"
+                onsubmit="return confirm('Delete member?')"
+            >
+                @csrf
+                @method('DELETE')
+
+                <button
+                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                >
+                    Delete
+                </button>
+
+            </form>
+
+        </div>
+
+    </td>
+
+</tr>
+            @empty
+                <tr>
+                    <td colspan="4" class="p-6 text-center text-gray-400">
+                        No members found
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
+        </table>
+
+    </div>
+
+    {{-- PAGINATION --}}
+    <div>
+        {{ $borrowers->links() }}
+    </div>
+
+    {{-- MODALS (UNCHANGED LOGIC, ONLY CLEAN UI) --}}
+    @include('borrowers.partials.modals')
+
+</div>
+
+@endsection

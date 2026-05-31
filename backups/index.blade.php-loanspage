@@ -1,0 +1,548 @@
+@extends('layouts.erp')
+
+@section('title', 'Loans Management')
+
+@section('content')
+
+<div x-data="{
+    openCreate: false,
+    openEdit: false,
+    selectedLoan: {}
+}" class="space-y-6">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-center">
+
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+                Loan Registry
+            </h2>
+
+            <p class="text-gray-500 text-sm mt-1">
+                Loan applications, approvals, repayments & reconciliation
+            </p>
+        </div>
+
+        <button
+            @click="openCreate = true"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
+        >
+            + New Loan Application
+        </button>
+
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Total Loans</p>
+
+            <h3 class="text-2xl font-bold">
+                {{ $totalLoans }}
+            </h3>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Active Loans</p>
+
+            <h3 class="text-2xl font-bold text-blue-600">
+                {{ $activeLoans }}
+            </h3>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Paid Loans</p>
+
+            <h3 class="text-2xl font-bold text-green-600">
+                {{ $paidLoans }}
+            </h3>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Overdue Loans</p>
+
+            <h3 class="text-2xl font-bold text-red-600">
+                {{ $overdueLoans }}
+            </h3>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Pending Review</p>
+
+            <h3 class="text-2xl font-bold text-yellow-600">
+                {{ $loans->where('status', 'under_review')->count() }}
+            </h3>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Total Disbursed</p>
+
+            <h3 class="text-2xl font-bold text-purple-600">
+                KES {{ number_format($totalDisbursed) }}
+            </h3>
+        </div>
+
+    </div>
+
+    <!-- TABLE -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+
+        <!-- TABLE HEADER -->
+        <div class="p-4 border-b flex justify-between items-center">
+
+            <h3 class="font-semibold text-gray-700">
+                Loan Records
+            </h3>
+
+            <form method="GET" class="flex gap-2">
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request('search') }}"
+                    placeholder="Search borrower..."
+                    class="border rounded-lg px-3 py-2 text-sm"
+                >
+
+                <button
+                    class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm"
+                >
+                    Search
+                </button>
+
+            </form>
+
+        </div>
+
+        <!-- TABLE BODY -->
+        <div class="overflow-x-auto">
+
+            <table class="w-full text-sm">
+
+                <thead class="bg-gray-100 text-gray-600">
+
+                    <tr>
+
+                        <th class="p-3 text-left">Borrower</th>
+
+                        <th class="p-3 text-left">Principal</th>
+
+                        <th class="p-3 text-left">Interest</th>
+
+                        <th class="p-3 text-left">Total Payable</th>
+
+                        <th class="p-3 text-left">Installment</th>
+
+                        <th class="p-3 text-left">Balance</th>
+
+                        <th class="p-3 text-left">Credit Score</th>
+
+                        <th class="p-3 text-left">Due Date</th>
+
+                        <th class="p-3 text-left">Status</th>
+
+                        <th class="p-3 text-center">Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @forelse($loans as $loan)
+
+                        <tr class="border-b hover:bg-gray-50 {{ $loan->status == 'overdue' ? 'bg-red-50' : '' }}">
+
+                            <!-- BORROWER -->
+                            <td class="p-3 font-medium">
+                                {{ $loan->borrower->full_name ?? 'N/A' }}
+                            </td>
+
+                            <!-- PRINCIPAL -->
+                            <td class="p-3">
+                                KES {{ number_format($loan->amount) }}
+                            </td>
+
+                            <!-- INTEREST -->
+                            <td class="p-3">
+                                {{ $loan->interest_rate }}%
+                            </td>
+
+                            <!-- TOTAL PAYABLE -->
+                            <td class="p-3 font-semibold text-purple-700">
+                                KES {{ number_format($loan->total_payable ?? 0) }}
+                            </td>
+
+                            <!-- INSTALLMENT -->
+                            <td class="p-3">
+                                KES {{ number_format($loan->monthly_installment ?? 0) }}
+                            </td>
+
+                            <!-- BALANCE -->
+                            <td class="p-3 font-semibold text-red-600">
+                                KES {{ number_format($loan->balance ?? 0) }}
+                            </td>
+
+                            <!-- CREDIT SCORE -->
+                            <td class="p-3">
+
+                                @if($loan->credit_score >= 80)
+
+                                    <span class="text-green-600 font-bold">
+                                        {{ $loan->credit_score }}
+                                    </span>
+
+                                @elseif($loan->credit_score >= 60)
+
+                                    <span class="text-yellow-600 font-bold">
+                                        {{ $loan->credit_score }}
+                                    </span>
+
+                                @else
+
+                                    <span class="text-red-600 font-bold">
+                                        {{ $loan->credit_score }}
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+                            <!-- DUE DATE -->
+                            <td class="p-3">
+                                {{ $loan->due_date }}
+                            </td>
+
+                            <!-- STATUS -->
+                            <td class="p-3">
+
+                                @if($loan->status == 'approved')
+
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
+                                        APPROVED
+                                    </span>
+
+                                @elseif($loan->status == 'under_review')
+
+                                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold">
+                                        UNDER REVIEW
+                                    </span>
+
+                                @elseif($loan->status == 'rejected')
+
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                                        REJECTED
+                                    </span>
+
+                                @elseif($loan->status == 'active')
+
+                                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
+                                        ACTIVE
+                                    </span>
+
+                                @elseif($loan->status == 'paid')
+
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
+                                        PAID
+                                    </span>
+
+                                @elseif($loan->status == 'overdue')
+
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                                        OVERDUE
+                                    </span>
+
+                                @elseif($loan->status == 'pending')
+
+                                    <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
+                                        PENDING
+                                    </span>
+
+                                @else
+
+                                    <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
+                                        {{ strtoupper($loan->status) }}
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+                            <!-- ACTIONS -->
+                            <td class="p-3 text-center space-x-2">
+
+                                <!-- APPROVAL ACTIONS -->
+                                @if(in_array($loan->status, ['pending', 'under_review', 'approved']))
+
+                                    <form
+                                        action="{{ route('loans.approve', $loan->id) }}"
+                                        method="POST"
+                                        class="inline"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                                        >
+                                            Activate
+                                        </button>
+
+                                    </form>
+
+                                    <form
+                                        action="{{ route('loans.reject', $loan->id) }}"
+                                        method="POST"
+                                        class="inline"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                                        >
+                                            Reject
+                                        </button>
+
+                                    </form>
+
+                                @endif
+
+                                <!-- REPAYMENT ONLY ACTIVE/OVERDUE -->
+                                @if(in_array($loan->status, ['active', 'overdue']))
+
+                                    <a
+                                        href="{{ route('repayments.create', ['loan_id' => $loan->id]) }}"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                                    >
+                                        Repay
+                                    </a>
+
+                                @endif
+
+                                <!-- HISTORY -->
+                                <a
+                                    href="{{ route('repayments.show', $loan->id) }}"
+                                    class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded text-xs"
+                                >
+                                    History
+                                </a>
+
+                                <!-- DELETE -->
+                                <form
+                                    action="{{ route('loans.destroy', $loan->id) }}"
+                                    method="POST"
+                                    class="inline"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        onclick="return confirm('Delete this loan?')"
+                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                    @empty
+
+                        <tr>
+
+                            <td colspan="10" class="text-center py-6 text-gray-500">
+                                No loans found.
+                            </td>
+
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- PAGINATION -->
+    <div>
+        {{ $loans->links() }}
+    </div>
+
+    <!-- CREATE LOAN MODAL -->
+    <div
+        x-show="openCreate"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+
+        <div
+            @click.away="openCreate = false"
+            class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 overflow-y-auto max-h-screen"
+        >
+
+            <div class="flex justify-between items-center mb-4">
+
+                <h2 class="text-xl font-bold">
+                    New Loan Application
+                </h2>
+
+                <button
+                    @click="openCreate = false"
+                    class="text-2xl text-gray-500"
+                >
+                    &times;
+                </button>
+
+            </div>
+
+            <form
+                method="POST"
+                action="{{ route('loans.store') }}"
+                class="space-y-4"
+            >
+
+                @csrf
+
+                <div>
+
+                    <label class="block mb-1">
+                        Borrower
+                    </label>
+
+                    <select
+                        name="borrower_id"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                        <option value="">
+                            Select Borrower
+                        </option>
+
+                        @foreach($borrowers as $borrower)
+
+                            <option value="{{ $borrower->id }}">
+                                {{ $borrower->full_name }}
+                            </option>
+
+                        @endforeach
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-1">
+                        Loan Amount
+                    </label>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        name="amount"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-1">
+                        Interest Rate (%)
+                    </label>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        name="interest_rate"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-1">
+                        Duration (Months)
+                    </label>
+
+                    <input
+                        type="number"
+                        name="duration_months"
+                        min="1"
+                        value="1"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-1">
+                        Loan Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="loan_date"
+                        value="{{ now()->toDateString() }}"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-1">
+                        Disbursement Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="disbursement_date"
+                        value="{{ now()->toDateString() }}"
+                        required
+                        class="w-full border rounded-lg p-2"
+                    >
+
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4">
+
+                    <button
+                        type="button"
+                        @click="openCreate = false"
+                        class="border px-4 py-2 rounded-lg"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                    >
+                        Submit Loan
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@endsection

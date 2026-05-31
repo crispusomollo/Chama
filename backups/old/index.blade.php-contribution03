@@ -1,0 +1,70 @@
+@extends('layouts.app')
+
+@section('content')
+
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Contributions</h2>
+</div>
+
+@if(session('success'))
+    <div class="bg-green-100 text-green-800 p-3 rounded mb-4">
+        {{ session('success') }}
+    </div>
+@endif
+
+<!-- FORM -->
+<div class="bg-white p-4 rounded shadow mb-6">
+
+    <form method="POST" action="/contributions" class="grid grid-cols-4 gap-3">
+        @csrf
+
+        <select name="borrower_id" class="border p-2 rounded">
+            <option>Select Member</option>
+            @foreach($borrowers as $b)
+                <option value="{{ $b->id }}">
+                    {{ $b->firstname }} {{ $b->lastname }}
+                </option>
+            @endforeach
+        </select>
+
+        <input name="amount" placeholder="Amount" class="border p-2 rounded">
+
+        <input type="date" name="contribution_date" class="border p-2 rounded">
+
+        <button class="bg-blue-600 text-white rounded">
+            Save
+        </button>
+
+    </form>
+
+</div>
+
+<!-- TABLE -->
+<div class="bg-white shadow rounded">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-200">
+            <tr>
+                <th class="p-3">Member</th>
+                <th class="p-3">Amount</th>
+                <th class="p-3">Date</th>
+                <th class="p-3">Month</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        @foreach($contributions as $c)
+            <tr class="border-b">
+                <td class="p-3">
+                    {{ $c->borrower->firstname }} {{ $c->borrower->lastname }}
+                </td>
+
+                <td class="p-3">{{ $c->amount }}</td>
+                <td class="p-3">{{ $c->contribution_date }}</td>
+                <td class="p-3">{{ $c->month }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>
+
+@endsection

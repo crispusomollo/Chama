@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Loan;
+use App\Models\Repayment;
+use Illuminate\Http\Request;
+
+class RepaymentController extends Controller
+{
+    public function create()
+    {
+        return view('repayments.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required',
+            'amount' => 'required|numeric|min:1',
+            'payment_date' => 'required|date',
+        ]);
+
+        Repayment::create($request->all());
+
+        // AUTO CLOSE LOAN
+        $loan = Loan::find($request->loan_id);
+
+        if ($loan->outstandingBalance() <= 0) {
+
+            $loan->status = 'paid';
+
+            $loan->save();
+        }
+
+        return redirect()
+            ->route('loans.index')
+            ->with('success', 'Repayment recorded successfully.');
+    }
+
+    public function show($loanId)
+    {
+    $loan = Loan::with('borrower', 'repayments')
+        ->findOrFail($loanId);
+
+    $repayments = $loan->repayments()
+        ->latest()
+        ->paginate(10);
+
+    $totalPaid = $loan->totalRepaid();
+
+    $outstanding = $loan->outstandingBalance();
+
+    return view('repayments.show', compact(
+        'loan',
+        'repayments',
+        'totalPaid',
+        'outstanding'
+    ));
+    }
+
+}

@@ -1,0 +1,43 @@
+@extends('layouts.app')
+
+@section('content')
+
+<h2 class="text-2xl font-bold mb-6">Reports Dashboard</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Total Borrowers</h3>
+        <p class="text-3xl font-bold">{{ $totalBorrowers }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Total Loans</h3>
+        <p class="text-3xl font-bold">{{ $totalLoans }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Active Loans</h3>
+        <p class="text-3xl font-bold text-green-600">{{ $activeLoans }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Paid Loans</h3>
+        <p class="text-3xl font-bold text-blue-600">{{ $paidLoans }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Overdue Loans</h3>
+        <p class="text-3xl font-bold text-red-600">{{ $overdueLoans }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-500">Total Loan Amount</h3>
+        <p class="text-3xl font-bold">
+            {{ number_format($totalLoanAmount, 2) }}
+        </p>
+    </div>
+
+</div>
+
+@endsection
