@@ -111,9 +111,19 @@ EXPOSE 10000
 
 
 # 11. Override storage paths to use the writable /tmp block at runtime
-CMD export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
+#CMD export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
+#    mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
+#    php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Storage paths bound to /tmp. Launching Apache..." && \
+#    apache2-foreground
+
+# 11. Copy live Render system variables into Apache, run database seeds, and launch
+CMD env | grep DB_ >> /etc/apache2/envvars && \
+    export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
     mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
     php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Storage paths bound to /tmp. Launching Apache..." && \
+    echo "🚀 Environment synced. Postgres Connected. Launching Apache..." && \
     apache2-foreground
+
