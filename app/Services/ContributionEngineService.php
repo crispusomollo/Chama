@@ -8,14 +8,15 @@ use App\Models\ContributionSchedule;
 use Carbon\Carbon;
 
 use App\Models\ShareLedger;
-
 use App\Models\InsuranceLedger;
 
 use App\Services\SettingService;
 
+use App\Services\RuleService;
+
 class ContributionEngineService
 {
-    //private $monthlyContribution = 14300;
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -26,18 +27,11 @@ class ContributionEngineService
     public function generateMonthlySchedules()
     {
         $currentYear = now()->year;
-
         $currentMonth = now()->month;
 
         $members = Borrower::all();
 
         foreach ($members as $member) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | GENERATE JAN -> CURRENT MONTH
-            |--------------------------------------------------------------------------
-            */
 
             for ($month = 1; $month <= $currentMonth; $month++) {
 
@@ -51,43 +45,18 @@ class ContributionEngineService
                         'borrower_id',
                         $member->id
                     )
-                    ->where('period', $period)
+                    ->where(
+                        'period',
+                        $period
+                    )
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
 
-                    ContributionSchedule::create([
-
-                        'borrower_id' => $member->id,
-
-                        'chama_id' => $member->chama_id,
-
-                        'period' => $period,
-
-                        //'expected_amount' =>
-                        //    $this->monthlyContribution,
-
-                        'expected_amount' =>
-                                SettingService::monthlyContribution(),
-
-                        'paid_amount' => 0,
-
-                        //'balance' =>
-                        //    $this->monthlyContribution,
-
-                        'balance' =>
-                                SettingService::monthlyContribution(),
-
-                        'penalty' => 0,
-
-                        'due_date' => Carbon::create(
-                            $currentYear,
-                            $month,
-                            1
-                        )->endOfMonth(),
-
-                        'status' => 'pending',
-                    ]);
+                    $this->ensureScheduleExists(
+                        $member->id,
+                        $period
+                    );
                 }
             }
         }
@@ -265,13 +234,12 @@ class ContributionEngineService
         $borrowerId,
         $period
     ) {
-
         $schedule = ContributionSchedule::where(
-                'borrower_id',
-                $borrowerId
-            )
-            ->where('period', $period)
-            ->first();
+            'borrower_id',
+            $borrowerId
+        )
+        ->where('period', $period)
+        ->first();
 
         if ($schedule) {
             return $schedule;
@@ -279,36 +247,37 @@ class ContributionEngineService
 
         $borrower = Borrower::findOrFail($borrowerId);
 
+        $rule = RuleService::forPeriod($period);
+
+        $expectedAmount =
+            $rule?->monthly_contribution ?? 0;
+
         return ContributionSchedule::create([
 
             'borrower_id' => $borrowerId,
 
             'chama_id' => $borrower->chama_id,
 
+            'rule_id' => $rule?->id,
+
             'period' => $period,
 
-            //'expected_amount' => $this->monthlyContribution,
-
-            //'paid_amount' => 0,
-
-            //'balance' => $this->monthlyContribution,
-
-            'expected_amount' => SettingService::monthlyContribution(),
+            'expected_amount' => $expectedAmount,
 
             'paid_amount' => 0,
 
-            'balance' => SettingService::monthlyContribution(),
+            'balance' => $expectedAmount,
 
             'penalty' => 0,
 
-            'due_date' => Carbon::parse($period . '-01')
-                ->endOfMonth(),
+            'due_date' => Carbon::parse(
+                $period . '-01'
+            )->endOfMonth(),
 
             'status' => 'pending',
         ]);
-
     }
-
+        
 
     /*
     |--------------------------------------------------------------------------
@@ -323,6 +292,11 @@ class ContributionEngineService
     {
         $borrower = Borrower::findOrFail($borrowerId);
 
+        $rule = RuleService::forPeriod($period);
+
+        $expectedAmount =
+            $rule?->monthly_contribution ?? 0;
+
         return ContributionSchedule::firstOrCreate(
 
             [
@@ -333,17 +307,13 @@ class ContributionEngineService
             [
                 'chama_id' => $borrower->chama_id,
 
-                //'expected_amount' => $this->monthlyContribution,
+                'rule_id' => $rule?->id,
 
-                //'paid_amount' => 0,
-
-                //'balance' => $this->monthlyContribution,
-
-                'expected_amount' => SettingService::monthlyContribution(),
+                'expected_amount' => $expectedAmount,
 
                 'paid_amount' => 0,
 
-                'balance' => SettingService::monthlyContribution(),
+                'balance' => $expectedAmount,
 
                 'penalty' => 0,
 
@@ -419,11 +389,6 @@ class ContributionEngineService
     }
 
 
-    private function monthlyContribution()
-    {
-        return SettingService::monthlyContribution();
-    }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -435,35 +400,37 @@ class ContributionEngineService
     {
         $today = Carbon::today();
 
-        $overdues = ContributionSchedule::where(
-            'due_date',
-            '<',
-            $today
-        )
-        ->where('status', '!=', 'paid')
-        ->get();
+        $overdues = ContributionSchedule::with('rule')
+            ->where(
+                'due_date',
+                '<',
+                $today
+            )
+            ->where(
+                'status',
+                '!=',
+                'paid'
+            )
+            ->get();
 
         foreach ($overdues as $schedule) {
 
-            //$schedule->status = 'overdue';
-
-            /*
-            |--------------------------------------------------------------------------
-            | SIMPLE PENALTY
-            |--------------------------------------------------------------------------
-            */
-
-            //$schedule->penalty += 100;
-
-            //$this->recalculateScheduleStatus($schedule);
+            $schedule->status = 'overdue';
 
             $schedule->penalty +=
-                    SettingService::penaltyAmount();
+                $schedule->rule?->penalty_amount ?? 0;
 
             $schedule->save();
         }
     }
 
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SHARES LEDGER
+    |--------------------------------------------------------------------------
+    */
 
     public function postSharesLedger($contribution)
     {
