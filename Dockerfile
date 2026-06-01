@@ -23,31 +23,35 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# 4. Install Composer cleanly
+# 4. CRITICAL FOR RENDER FREE TIER: Force Apache to run on port 10000
+RUN sed -i 's/Listen 80/Listen 10000/g' /etc/apache2/ports.conf
+RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost \*:10000>/g' /etc/apache2/sites-available/*.conf
+
+# 5. Install Composer cleanly
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# 5. Set working directory and copy application files
+# 6. Set working directory and copy application files
 WORKDIR /var/www/html
 COPY . .
 
-# 6. Install PHP packages for production
+# 7. Install PHP packages for production
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# 7. Configure storage permissions so Apache can read/write data profiles
-RUN chown -r www-data:www-data /var/www/html \
-    && chmod -r 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# 8. Fixed Capitalization: Configure storage permissions recursively (-R)
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 8. Clear all optimization caches compiled from your local machine
+# 9. Clear all optimization caches compiled from your local machine
 RUN php artisan config:clear || true \
     && php artisan route:clear || true \
     && php artisan cache:clear || true \
     && php artisan view:clear || true
 
-# 9. Expose Apache's default port
-EXPOSE 80
+# 10. Expose Render's default port
+EXPOSE 10000
 
-# 10. Execute database upgrades and fire up Apache in the foreground
+# 11. Execute database upgrades and fire up Apache in the foreground
 CMD php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Schema ready. Launching Apache..." && \
+    echo "🚀 Schema ready. Launching Apache on Port 10000..." && \
     apache2-foreground
