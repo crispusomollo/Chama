@@ -25,6 +25,22 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/health', function () {
+        try {
+            DB::connection()->getPdo();
+
+            return response()->json([
+                'status' => 'ok',
+                'database' => 'connected',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+});
+
 Route::middleware(['auth'])->group(function () {
 
     /*
@@ -60,7 +76,7 @@ Route::middleware(['auth'])->group(function () {
     | Loans
     |--------------------------------------------------------------------------
     */
-    Route::resource('loans', LoanController::class);
+    //Route::resource('loans', LoanController::class);
     
     Route::resource('loans', LoanController::class)
 	    ->middleware('role:admin|treasurer');
@@ -273,24 +289,6 @@ Route::middleware(['auth'])->group(function () {
         'destroy'
     ]);
 
-
-    
-
-Route::get('/health', function () {
-        try {
-            DB::connection()->getPdo();
-
-            return response()->json([
-                'status' => 'ok',
-                'database' => 'connected',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    });
 
     /*
     |--------------------------------------------------------------------------
