@@ -19,16 +19,31 @@ RUN apt-get update && apt-get install -y \
 RUN a2enmod rewrite
 
 # 3. Change Apache's Document Root to point to Laravel's "public" folder
+#ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+#RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+#RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# ADD THIS CRITICAL SYMFONY/REWRITE OVERRIDE BLOCK:
+#RUN echo '<Directory /var/www/html/public>\n\
+#    Options Indexes FollowSymLinks\n\
+#    AllowOverride All\n\
+#    Require all granted\n\
+#</Directory>' >> /etc/apache2/apache2.conf
+
+# 3. Change Apache's Document Root to point to Laravel's "public" folder
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# ADD THIS CRITICAL SYMFONY/REWRITE OVERRIDE BLOCK:
-RUN echo '<Directory /var/www/html/public>\n\
-    Options Indexes FollowSymLinks\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>' >> /etc/apache2/apache2.conf
+# Clean multi-line rewrite injection to fix the Symfony 2307 roadblock
+RUN cat << 'EOF' >> /etc/apache2/apache2.conf
+<Directory /var/www/html/public>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+EOF
+
 
 
 # 4. CRITICAL FOR RENDER FREE TIER: Force Apache to run on port 10000
