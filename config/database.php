@@ -87,7 +87,7 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', 'dpg-d8ej1ekm0tmc73etdnqg-a'),
+            'host' => env('DB_HOST', 'dpg-d8ej1ekm0tmc73etdnqg-a.oregon-postgres.render.com'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'chama_ch2c'),
             'username' => env('DB_USERNAME', 'chama_ch2c_user'),

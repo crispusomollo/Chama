@@ -69,6 +69,7 @@ EXPOSE 10000
 #    php artisan db:seed --force && \
 #    echo "🚀 Schema verified. Launching Apache on Port 10000..." && \
 #    apache2-foreground
+
 # 11. Run your operations dynamically at runtime when variables are accessible
 #CMD php artisan config:clear && \
 #    php artisan cache:clear && \
