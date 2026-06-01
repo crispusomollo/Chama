@@ -19,6 +19,8 @@ use App\Http\Controllers\SettingsController;
 
 use App\Http\Controllers\SystemRuleController;
 
+use Illuminate\Support\Facades\DB;
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -270,6 +272,25 @@ Route::middleware(['auth'])->group(function () {
         'show',
         'destroy'
     ]);
+
+
+    
+
+Route::get('/health', function () {
+        try {
+            DB::connection()->getPdo();
+
+            return response()->json([
+                'status' => 'ok',
+                'database' => 'connected',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    });
 
     /*
     |--------------------------------------------------------------------------
