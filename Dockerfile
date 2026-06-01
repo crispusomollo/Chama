@@ -42,10 +42,14 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # 9. Clear all optimization caches compiled from your local machine
-RUN php artisan config:clear || true \
-    && php artisan route:clear || true \
-    && php artisan cache:clear || true \
-    && php artisan view:clear || true
+#RUN php artisan config:clear || true \
+#    && php artisan route:clear || true \
+#    && php artisan cache:clear || true \
+#    && php artisan view:clear || true
+# 9. Completely delete any static local machine config files if they exist
+RUN rm -f bootstrap/cache/config.php \
+    && rm -f bootstrap/cache/routes.php \
+    && rm -f bootstrap/cache/views.php
 
 # 10. Expose Render's default port
 EXPOSE 10000
@@ -57,11 +61,20 @@ EXPOSE 10000
 #    apache2-foreground
 
 # 11. Clear compiled configuration caches at runtime, then launch Apache
+#CMD php artisan config:clear && \
+#    php artisan cache:clear && \
+#    php artisan view:clear && \
+#    php artisan route:clear && \
+#    php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Schema verified. Launching Apache on Port 10000..." && \
+#    apache2-foreground
+# 11. Run your operations dynamically at runtime when variables are accessible
 CMD php artisan config:clear && \
     php artisan cache:clear && \
     php artisan view:clear && \
     php artisan route:clear && \
     php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Schema verified. Launching Apache on Port 10000..." && \
+    echo "🚀 Configuration clear. Postgres Connected. Launching Apache..." && \
     apache2-foreground
