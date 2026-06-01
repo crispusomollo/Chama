@@ -26,19 +26,26 @@ Route::get('/', function () {
 });
 
 Route::get('/health', function () {
-        try {
-            DB::connection()->getPdo();
 
-            return response()->json([
-                'status' => 'ok',
-                'database' => 'connected',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+    DB::connection()->getPdo();
+
+    return response()->json([
+        'status' => 'ok'
+    ]);
+
+});
+
+Route::get('/dbtest', function () {
+
+    return [
+        'default' => config('database.default'),
+        'driver' => config('database.connections.pgsql.driver'),
+        'host' => config('database.connections.pgsql.host'),
+        'database' => config('database.connections.pgsql.database'),
+        'username' => config('database.connections.pgsql.username'),
+        'sslmode' => config('database.connections.pgsql.sslmode'),
+    ];
+
 });
 
 Route::middleware(['auth'])->group(function () {
