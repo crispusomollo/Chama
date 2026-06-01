@@ -32,7 +32,12 @@ RUN php artisan config:clear || true \
 
 # 7. Set the container entrypoint execution loop
 # This runs migrations and database seeding safely right before launching the real Nginx web server
+#CMD php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Database ready. Starting web server..." && \
+#    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+# Start app (Using serversideup's native boot stage logic)
 CMD php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Database ready. Starting web server..." && \
-    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    echo "🚀 Database ready. Starting Nginx Web Server..." && \
+    exec /usr/local/bin/web-bootstage
