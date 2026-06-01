@@ -51,7 +51,17 @@ RUN php artisan config:clear || true \
 EXPOSE 10000
 
 # 11. Execute database upgrades and fire up Apache in the foreground
-CMD php artisan migrate --force && \
+#CMD php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Schema ready. Launching Apache on Port 10000..." && \
+#    apache2-foreground
+
+# 11. Clear compiled configuration caches at runtime, then launch Apache
+CMD php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan view:clear && \
+    php artisan route:clear && \
+    php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Schema ready. Launching Apache on Port 10000..." && \
+    echo "🚀 Schema verified. Launching Apache on Port 10000..." && \
     apache2-foreground
