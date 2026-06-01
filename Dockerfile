@@ -119,9 +119,22 @@ EXPOSE 10000
 #    apache2-foreground
 
 # 11. Copy live Render system variables into Apache, run database seeds, and launch
+#CMD env | grep DB_ >> /etc/apache2/envvars && \
+#    export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
+#    mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
+#    php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Environment synced. Postgres Connected. Launching Apache..." && \
+#    apache2-foreground
+
+# 11. Core Boot Execution Block (Uncut)
 CMD env | grep DB_ >> /etc/apache2/envvars && \
     export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
     mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
+    php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan view:clear && \
+    php artisan route:clear && \
     php artisan migrate --force && \
     php artisan db:seed --force && \
     echo "🚀 Environment synced. Postgres Connected. Launching Apache..." && \
