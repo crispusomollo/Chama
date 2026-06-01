@@ -58,9 +58,9 @@ RUN rm -f bootstrap/cache/config.php \
 # 11. Declare operational exposed port parameters
 EXPOSE 10000
 
-# 12. Bind paths, execute schema modifications, and launch the Apache server process
+# 12. Direct Apache to initialize the container and launch
 CMD export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
     mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
     php artisan migrate --force && \
-    echo "🚀 Postgres Connected. Launching Apache Web Instance..." && \
+    echo "🚀 Connected to PostgreSQL. Web server online..." && \
     apache2-foreground
