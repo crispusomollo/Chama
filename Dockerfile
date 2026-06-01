@@ -1,8 +1,11 @@
-FROM serversideup/php:8.3-fpm-nginx
+FROM php:8.3-apache
 
-# 1. Install system dependencies required for PostgreSQL, Zip, and GD
-USER root
+# 1. Install production system dependencies for Postgres, Zip, and GD
 RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    curl \
+    zip \
     libpq-dev \
     libzip-dev \
     libpng-dev \
@@ -12,32 +15,39 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_pgsql zip gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2. Set the working directory to the standard web serving root
+# 2. Enable Apache URL Mod_Rewrite (Mandatory for Laravel routing links)
+RUN a2enmod rewrite
+
+# 3. Change Apache's Document Root to point to Laravel's "public" folder
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# 4. Install Composer cleanly
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# 5. Set working directory and copy application files
 WORKDIR /var/www/html
+COPY . .
 
-# 3. Copy application files into the container
-COPY --chown=www-data:www-data . .
-
-# 4. Switch to the standard web user for security and file permission execution
-USER www-data
-
-# 5. Install production PHP composer dependencies cleanly
+# 6. Install PHP packages for production
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# 6. Clear out any local machine cache residues
+# 7. Configure storage permissions so Apache can read/write data profiles
+RUN chown -r www-data:www-data /var/www/html \
+    && chmod -r 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# 8. Clear all optimization caches compiled from your local machine
 RUN php artisan config:clear || true \
     && php artisan route:clear || true \
     && php artisan cache:clear || true \
     && php artisan view:clear || true
 
-# 7. Set the container entrypoint execution loop
-# This runs migrations and database seeding safely right before launching the real Nginx web server
-#CMD php artisan migrate --force && \
-#    php artisan db:seed --force && \
-#    echo "🚀 Database ready. Starting web server..." && \
-#    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-# Start app (Using serversideup's native boot stage logic)
+# 9. Expose Apache's default port
+EXPOSE 80
+
+# 10. Execute database upgrades and fire up Apache in the foreground
 CMD php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Database ready. Starting Nginx Web Server..." && \
-    exec /usr/local/bin/web-bootstage
+    echo "🚀 Schema ready. Launching Apache..." && \
+    apache2-foreground
