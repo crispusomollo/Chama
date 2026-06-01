@@ -81,7 +81,16 @@ EXPOSE 10000
 #    apache2-foreground
 
 # 11. Run migrations and seeders, then launch Apache directly
-CMD php artisan migrate --force && \
+#CMD php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Schema and seeds complete. Launching Apache web instance..." && \
+#    apache2-foreground
+
+
+# 11. Override storage paths to use the writable /tmp block at runtime
+CMD export VIEW_COMPILED_PATH=/tmp/storage/framework/views && \
+    mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions && \
+    php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Schema and seeds complete. Launching Apache web instance..." && \
+    echo "🚀 Storage paths bound to /tmp. Launching Apache..." && \
     apache2-foreground
