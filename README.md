@@ -1,4 +1,4 @@
-# 🏦 Loan System (Chama Management Platform)
+# 🏦 Chama Management Platform
 
 A full-stack **Chama Management System** built with Laravel and PostgreSQL.  
 It manages members, contributions, loans, repayments, penalties, and system rules.
