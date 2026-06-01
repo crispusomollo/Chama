@@ -87,16 +87,16 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', 'dpg-d8ej1ekm0tmc73etdnqg-a.oregon-postgres.render.com'),
+            'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'chama_ch2c'),
-            'username' => env('DB_USERNAME', 'chama_ch2c_user'),
-            'password' => env('DB_PASSWORD', 'LnAD1NttGmXHP6vwd4tQFh5zQGGA2B3p'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'sslmode' => 'require',
         ],
 
         'sqlsrv' => [
