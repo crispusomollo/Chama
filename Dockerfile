@@ -70,11 +70,17 @@ EXPOSE 10000
 #    echo "🚀 Schema verified. Launching Apache on Port 10000..." && \
 #    apache2-foreground
 # 11. Run your operations dynamically at runtime when variables are accessible
-CMD php artisan config:clear && \
-    php artisan cache:clear && \
-    php artisan view:clear && \
-    php artisan route:clear && \
-    php artisan migrate --force && \
+#CMD php artisan config:clear && \
+#    php artisan cache:clear && \
+#    php artisan view:clear && \
+#    php artisan route:clear && \
+#    php artisan migrate --force && \
+#    php artisan db:seed --force && \
+#    echo "🚀 Configuration clear. Postgres Connected. Launching Apache..." && \
+#    apache2-foreground
+
+# 11. Run migrations and seeders, then launch Apache directly
+CMD php artisan migrate --force && \
     php artisan db:seed --force && \
-    echo "🚀 Configuration clear. Postgres Connected. Launching Apache..." && \
+    echo "🚀 Schema and seeds complete. Launching Apache web instance..." && \
     apache2-foreground
