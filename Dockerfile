@@ -23,6 +23,14 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# ADD THIS CRITICAL SYMFONY/REWRITE OVERRIDE BLOCK:
+RUN echo '<Directory /var/www/html/public>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>' >> /etc/apache2/apache2.conf
+
+
 # 4. CRITICAL FOR RENDER FREE TIER: Force Apache to run on port 10000
 RUN sed -i 's/Listen 80/Listen 10000/g' /etc/apache2/ports.conf
 RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost \*:10000>/g' /etc/apache2/sites-available/*.conf
