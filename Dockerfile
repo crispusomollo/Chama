@@ -1,46 +1,38 @@
-FROM php:8.3-cli
+FROM serversideup/php:8.3-fpm-nginx
 
-# System dependencies (single clean block)
+# 1. Install system dependencies required for PostgreSQL, Zip, and GD
+USER root
 RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    curl \
-    zip \
     libpq-dev \
     libzip-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql zip gd
+    && docker-php-ext-install pdo pdo_pgsql zip gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# 2. Set the working directory to the standard web serving root
+WORKDIR /var/www/html
 
-# Working directory
-WORKDIR /app
+# 3. Copy application files into the container
+COPY --chown=www-data:www-data . .
 
-# Copy project
-COPY . .
+# 4. Switch to the standard web user for security and file permission execution
+USER www-data
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# 5. Install production PHP composer dependencies cleanly
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# 6. Clear out any local machine cache residues
+RUN php artisan config:clear || true \
+    && php artisan route:clear || true \
+    && php artisan cache:clear || true \
+    && php artisan view:clear || true
 
-RUN php artisan config:clear || true
-RUN php artisan route:clear || true
-RUN php artisan cache:clear || true
-RUN php artisan view:clear || true
-
-# Permissions
-RUN chmod -R 775 storage bootstrap/cache
-
-# Expose Render port
-EXPOSE 10000
-
-# Start app (IMPORTANT: no migrate here)
-#CMD php artisan serve --host=0.0.0.0 --port=10000
-#CMD php artisan serve --host=0.0.0.0 --port=$PORT
+# 7. Set the container entrypoint execution loop
+# This runs migrations and database seeding safely right before launching the real Nginx web server
 CMD php artisan migrate --force && \
     php artisan db:seed --force && \
-    php artisan serve --host=0.0.0.0 --port=10000
+    echo "🚀 Database ready. Starting web server..." && \
+    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
